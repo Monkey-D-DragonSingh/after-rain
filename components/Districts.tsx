@@ -214,6 +214,232 @@ function createNoodleTexture() {
   return texture;
 }
 
+// Residential Esperanza Tenement Windows (high density, warm curtains, TV blue flicker)
+function createResidentialWindowTexture(): THREE.CanvasTexture | null {
+  if (typeof document === "undefined") return null;
+  const canvas = document.createElement("canvas");
+  canvas.width = 512;
+  canvas.height = 512;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return null;
+
+  ctx.fillStyle = "#0a0d16";
+  ctx.fillRect(0, 0, 512, 512);
+
+  const cols = 20;
+  const rows = 32;
+  const w = 512 / cols;
+  const h = 512 / rows;
+
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
+      const rand = Math.sin(r * 31.3 + c * 17.9) * 10000;
+      const frac = rand - Math.floor(rand);
+
+      if (frac < 0.3) continue;
+
+      if (frac < 0.72) {
+        ctx.fillStyle = frac < 0.5 ? "#f59e0b" : "#d97706";
+      } else if (frac < 0.88) {
+        ctx.fillStyle = "#0284c7";
+      } else {
+        ctx.fillStyle = "#f43f5e";
+      }
+
+      ctx.fillRect(c * w + 2.5, r * h + 2, w - 5, h - 4);
+
+      if (frac > 0.5) {
+        ctx.fillStyle = "rgba(10, 13, 22, 0.65)";
+        ctx.fillRect(c * w + 2.5, r * h + 2, (w - 5) * 0.35, h - 4);
+      }
+    }
+  }
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.wrapS = THREE.RepeatWrapping;
+  texture.wrapT = THREE.RepeatWrapping;
+  return texture;
+}
+
+// Retro Atari Neon Billboard
+function createAtariTexture(): THREE.CanvasTexture | null {
+  if (typeof document === "undefined") return null;
+  const canvas = document.createElement("canvas");
+  canvas.width = 256;
+  canvas.height = 256;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return null;
+
+  ctx.fillStyle = "#080a14";
+  ctx.fillRect(0, 0, 256, 256);
+
+  ctx.strokeStyle = "#f43f5e";
+  ctx.lineWidth = 5;
+  ctx.strokeRect(6, 6, 244, 244);
+
+  // Fuji logo
+  ctx.fillStyle = "#f43f5e";
+  ctx.fillRect(120, 45, 16, 110);
+
+  ctx.beginPath();
+  ctx.moveTo(95, 155);
+  ctx.quadraticCurveTo(90, 75, 55, 60);
+  ctx.lineTo(70, 60);
+  ctx.quadraticCurveTo(105, 75, 110, 155);
+  ctx.closePath();
+  ctx.fill();
+
+  ctx.beginPath();
+  ctx.moveTo(161, 155);
+  ctx.quadraticCurveTo(166, 75, 201, 60);
+  ctx.lineTo(186, 60);
+  ctx.quadraticCurveTo(151, 75, 146, 155);
+  ctx.closePath();
+  ctx.fill();
+
+  ctx.font = "900 32px sans-serif";
+  ctx.fillStyle = "#38bdf8";
+  ctx.fillText("ATARI", 72, 205);
+
+  ctx.font = "12px monospace";
+  ctx.fillStyle = "#f43f5e";
+  ctx.fillText("アタリ // 2049 DIGITAL", 42, 230);
+
+  const texture = new THREE.CanvasTexture(canvas);
+  return texture;
+}
+
+// Reusable Blade Runner Neon Kanji Sign
+function createKanjiTexture(mainText: string, subText: string, colorHex: string): THREE.CanvasTexture | null {
+  if (typeof document === "undefined") return null;
+  const canvas = document.createElement("canvas");
+  canvas.width = 128;
+  canvas.height = 256;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return null;
+
+  ctx.fillStyle = "#080912";
+  ctx.fillRect(0, 0, 128, 256);
+
+  ctx.strokeStyle = colorHex;
+  ctx.lineWidth = 3;
+  ctx.strokeRect(4, 4, 120, 248);
+
+  ctx.fillStyle = colorHex;
+  ctx.font = "bold 28px sans-serif";
+  const chars = mainText.split("");
+  chars.forEach((c, idx) => {
+    ctx.fillText(c, 48, 55 + idx * 42);
+  });
+
+  ctx.font = "11px monospace";
+  ctx.fillStyle = "#cbd5e1";
+  ctx.fillText(subText, 16, 235);
+
+  const texture = new THREE.CanvasTexture(canvas);
+  return texture;
+}
+
+// Cyberpunk Vending Machine Texture
+function createVendingTexture(): THREE.CanvasTexture | null {
+  if (typeof document === "undefined") return null;
+  const canvas = document.createElement("canvas");
+  canvas.width = 128;
+  canvas.height = 256;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return null;
+
+  ctx.fillStyle = "#0f172a";
+  ctx.fillRect(0, 0, 128, 256);
+
+  ctx.fillStyle = "#0369a1";
+  ctx.fillRect(10, 15, 108, 145);
+
+  const canColors = ["#ef4444", "#38bdf8", "#10b981", "#f59e0b"];
+  for (let r = 0; r < 4; r++) {
+    for (let c = 0; c < 3; c++) {
+      ctx.fillStyle = canColors[(r + c) % canColors.length];
+      ctx.fillRect(20 + c * 32, 25 + r * 32, 22, 26);
+    }
+  }
+
+  ctx.fillStyle = "#020617";
+  ctx.fillRect(16, 185, 96, 45);
+
+  ctx.font = "bold 13px sans-serif";
+  ctx.fillStyle = "#38bdf8";
+  ctx.fillText("SYNTH-DRINK", 16, 175);
+
+  const texture = new THREE.CanvasTexture(canvas);
+  return texture;
+}
+
+// Helper: 4-sided Window Mesh for any building so all sides are richly detailed
+function FourSidedWindows({
+  size,
+  texture,
+  emissiveColor = "#ffffff",
+  emissiveIntensity = 0.8,
+}: {
+  size: [number, number, number];
+  texture: THREE.CanvasTexture | null;
+  emissiveColor?: string;
+  emissiveIntensity?: number;
+}) {
+  if (!texture) return null;
+  const [w, h, d] = size;
+  const offset = 0.04;
+
+  return (
+    <group>
+      {/* Front (+Z) */}
+      <mesh position={[0, 0, d / 2 + offset]}>
+        <planeGeometry args={[w * 0.94, h * 0.94]} />
+        <meshStandardMaterial
+          map={texture}
+          emissive={emissiveColor}
+          emissiveMap={texture}
+          emissiveIntensity={emissiveIntensity}
+          roughness={0.3}
+        />
+      </mesh>
+      {/* Back (-Z) */}
+      <mesh position={[0, 0, -d / 2 - offset]} rotation={[0, Math.PI, 0]}>
+        <planeGeometry args={[w * 0.94, h * 0.94]} />
+        <meshStandardMaterial
+          map={texture}
+          emissive={emissiveColor}
+          emissiveMap={texture}
+          emissiveIntensity={emissiveIntensity}
+          roughness={0.3}
+        />
+      </mesh>
+      {/* Right (+X) */}
+      <mesh position={[w / 2 + offset, 0, 0]} rotation={[0, Math.PI / 2, 0]}>
+        <planeGeometry args={[d * 0.94, h * 0.94]} />
+        <meshStandardMaterial
+          map={texture}
+          emissive={emissiveColor}
+          emissiveMap={texture}
+          emissiveIntensity={emissiveIntensity}
+          roughness={0.3}
+        />
+      </mesh>
+      {/* Left (-X) */}
+      <mesh position={[-w / 2 - offset, 0, 0]} rotation={[0, -Math.PI / 2, 0]}>
+        <planeGeometry args={[d * 0.94, h * 0.94]} />
+        <meshStandardMaterial
+          map={texture}
+          emissive={emissiveColor}
+          emissiveMap={texture}
+          emissiveIntensity={emissiveIntensity}
+          roughness={0.3}
+        />
+      </mesh>
+    </group>
+  );
+}
+
 export default function Districts() {
   const oceanRef = useRef<THREE.Mesh>(null);
   const beaconRef = useRef<THREE.Group>(null);

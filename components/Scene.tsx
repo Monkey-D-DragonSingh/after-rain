@@ -4,6 +4,7 @@ import { Canvas, useFrame } from "@react-three/fiber";
 import { useRef } from "react";
 import * as THREE from "three";
 import Atmosphere from "./Atmosphere";
+import Clouds from "./Clouds";
 import Rain from "./Rain";
 import Districts from "./Districts";
 import TrainSystem from "./TrainSystem";
@@ -48,6 +49,7 @@ export default function Scene() {
         }}
       >
         <Atmosphere />
+        <Clouds />
         <Rain />
         <Districts />
         <TrainSystem />

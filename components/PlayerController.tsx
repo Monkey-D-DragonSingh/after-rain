@@ -31,11 +31,19 @@ export default function PlayerController() {
   const stepTimer = useRef(0);
   const walkDistance = useRef(0);
 
-  // Sync camera position on mount / fast travel
+  // Persistent continuous angles (prevents Euler quaternion flips & 360-degree stuck bugs)
+  const yaw = useRef(0);
+  const pitch = useRef(0);
+  const isPointerLocked = useRef(false);
+
+  // Sync camera position on mount / fast travel, and initialize yaw/pitch
   const storePos = useGameStore((s) => s.playerPos);
   useEffect(() => {
     if (cameraRef.current) {
       cameraRef.current.position.set(storePos[0], storePos[1], storePos[2]);
+      euler.current.setFromQuaternion(cameraRef.current.quaternion, "YXZ");
+      yaw.current = euler.current.y;
+      pitch.current = euler.current.x;
     }
   }, [storePos]);
 
@@ -98,29 +106,47 @@ export default function PlayerController() {
     };
   }, [gameState, nearbyMemory, openMemory, setGameState]);
 
-  // Mouse drag look & pointer lock support
+  // Seamless 360-degree mouse look & pointer lock support
   useEffect(() => {
     const dom = gl.domElement;
 
+    const onPointerLockChange = () => {
+      isPointerLocked.current = document.pointerLockElement === dom;
+    };
+
     const onMouseDown = (e: MouseEvent) => {
       if (gameState !== "playing") return;
+      // Request pointer lock on click for full 360-degree free mouse look
+      if (dom.requestPointerLock && document.pointerLockElement !== dom) {
+        dom.requestPointerLock();
+      }
       isDragging.current = true;
       lastMousePos.current = { x: e.clientX, y: e.clientY };
     };
 
     const onMouseMove = (e: MouseEvent) => {
-      if (!isDragging.current || gameState !== "playing" || !cameraRef.current) return;
+      if (gameState !== "playing" || !cameraRef.current) return;
+      if (!isPointerLocked.current && !isDragging.current) return;
 
-      const deltaX = e.clientX - lastMousePos.current.x;
-      const deltaY = e.clientY - lastMousePos.current.y;
-      lastMousePos.current = { x: e.clientX, y: e.clientY };
+      const sensitivity = 0.0024;
+      let deltaX = 0;
+      let deltaY = 0;
 
-      const sensitivity = 0.0028;
-      euler.current.setFromQuaternion(cameraRef.current.quaternion);
-      euler.current.y -= deltaX * sensitivity;
-      euler.current.x -= deltaY * sensitivity;
-      euler.current.x = Math.max(-Math.PI / 2.1, Math.min(Math.PI / 2.1, euler.current.x));
-      cameraRef.current.quaternion.setFromEuler(euler.current);
+      if (isPointerLocked.current) {
+        deltaX = e.movementX || 0;
+        deltaY = e.movementY || 0;
+      } else {
+        deltaX = e.clientX - lastMousePos.current.x;
+        deltaY = e.clientY - lastMousePos.current.y;
+        lastMousePos.current = { x: e.clientX, y: e.clientY };
+      }
+
+      // Continuous rotation without quaternion gimbal-lock or edge clamping
+      yaw.current -= deltaX * sensitivity;
+      pitch.current -= deltaY * sensitivity;
+      pitch.current = Math.max(-Math.PI / 2.05, Math.min(Math.PI / 2.05, pitch.current));
+
+      cameraRef.current.rotation.set(pitch.current, yaw.current, 0, "YXZ");
     };
 
     const onMouseUp = () => {
@@ -141,17 +167,18 @@ export default function PlayerController() {
       lastMousePos.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
 
       const sensitivity = 0.0035;
-      euler.current.setFromQuaternion(cameraRef.current.quaternion);
-      euler.current.y -= deltaX * sensitivity;
-      euler.current.x -= deltaY * sensitivity;
-      euler.current.x = Math.max(-Math.PI / 2.1, Math.min(Math.PI / 2.1, euler.current.x));
-      cameraRef.current.quaternion.setFromEuler(euler.current);
+      yaw.current -= deltaX * sensitivity;
+      pitch.current -= deltaY * sensitivity;
+      pitch.current = Math.max(-Math.PI / 2.05, Math.min(Math.PI / 2.05, pitch.current));
+
+      cameraRef.current.rotation.set(pitch.current, yaw.current, 0, "YXZ");
     };
 
     const onTouchEnd = () => {
       isDragging.current = false;
     };
 
+    document.addEventListener("pointerlockchange", onPointerLockChange);
     dom.addEventListener("mousedown", onMouseDown);
     window.addEventListener("mousemove", onMouseMove);
     window.addEventListener("mouseup", onMouseUp);
@@ -161,6 +188,7 @@ export default function PlayerController() {
     window.addEventListener("touchend", onTouchEnd);
 
     return () => {
+      document.removeEventListener("pointerlockchange", onPointerLockChange);
       dom.removeEventListener("mousedown", onMouseDown);
       window.removeEventListener("mousemove", onMouseMove);
       window.removeEventListener("mouseup", onMouseUp);
@@ -179,12 +207,27 @@ export default function PlayerController() {
     const isRunning = keys.current["ShiftLeft"] || keys.current["ShiftRight"];
     const speed = isRunning ? 9.5 : 5.2;
 
+    // Keyboard Arrow Left & Arrow Right smooth 360-degree rotation
+    const keyTurnSpeed = 2.4;
+    let didKeyTurn = false;
+    if (keys.current["ArrowLeft"] || keys.current["KeyQ"]) {
+      yaw.current += keyTurnSpeed * delta;
+      didKeyTurn = true;
+    }
+    if (keys.current["ArrowRight"]) {
+      yaw.current -= keyTurnSpeed * delta;
+      didKeyTurn = true;
+    }
+    if (didKeyTurn) {
+      activeCam.rotation.set(pitch.current, yaw.current, 0, "YXZ");
+    }
+
     moveDirection.current.set(0, 0, 0);
 
     if (keys.current["KeyW"] || keys.current["ArrowUp"]) moveDirection.current.z -= 1;
     if (keys.current["KeyS"] || keys.current["ArrowDown"]) moveDirection.current.z += 1;
-    if (keys.current["KeyA"] || keys.current["ArrowLeft"]) moveDirection.current.x -= 1;
-    if (keys.current["KeyD"] || keys.current["ArrowRight"]) moveDirection.current.x += 1;
+    if (keys.current["KeyA"]) moveDirection.current.x -= 1;
+    if (keys.current["KeyD"]) moveDirection.current.x += 1;
 
     const isMoving = moveDirection.current.lengthSq() > 0;
 
