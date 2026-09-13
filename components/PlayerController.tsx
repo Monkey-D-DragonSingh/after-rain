@@ -14,6 +14,12 @@ export default function PlayerController() {
   const setGameState = useGameStore((s) => s.setGameState);
   const nearbyMemory = useGameStore((s) => s.nearbyMemory);
   const openMemory = useGameStore((s) => s.openMemory);
+  const nearbyCat = useGameStore((s) => s.nearbyCat);
+  const petCat = useGameStore((s) => s.petCat);
+  const nearbyNPC = useGameStore((s) => s.nearbyNPC);
+  const npcDialogueOpen = useGameStore((s) => s.npcDialogueOpen);
+  const talkToMaahi = useGameStore((s) => s.talkToMaahi);
+  const closeMaahiDialogue = useGameStore((s) => s.closeMaahiDialogue);
   const setCurrentDistrict = useGameStore((s) => s.setCurrentDistrict);
   const setPlayerPos = useGameStore((s) => s.setPlayerPos);
 
@@ -54,8 +60,15 @@ export default function PlayerController() {
 
       // Interaction key [E]
       if (e.code === "KeyE") {
-        if (nearbyMemory && gameState === "playing") {
+        if (npcDialogueOpen) {
+          // Mid-conversation: E advances/closes regardless of anything else nearby.
+          talkToMaahi();
+        } else if (nearbyMemory && gameState === "playing") {
           openMemory(nearbyMemory);
+        } else if (nearbyNPC && gameState === "playing") {
+          talkToMaahi();
+        } else if (nearbyCat && gameState === "playing") {
+          petCat(nearbyCat);
         } else if (gameState === "playing" && cameraRef.current) {
           // Check if near Rooftop elevator pad at [0, 0]
           const distToElevator = Math.hypot(cameraRef.current.position.x, cameraRef.current.position.z);
@@ -83,7 +96,9 @@ export default function PlayerController() {
 
       // Escape key
       if (e.code === "Escape") {
-        if (gameState === "map" || gameState === "memories" || gameState === "inspecting") {
+        if (npcDialogueOpen) {
+          closeMaahiDialogue();
+        } else if (gameState === "map" || gameState === "memories" || gameState === "inspecting") {
           setGameState("playing");
         } else if (gameState === "playing") {
           setGameState("paused");
@@ -104,7 +119,18 @@ export default function PlayerController() {
       window.removeEventListener("keydown", handleKeyDown);
       window.removeEventListener("keyup", handleKeyUp);
     };
-  }, [gameState, nearbyMemory, openMemory, setGameState]);
+  }, [
+    gameState,
+    nearbyMemory,
+    openMemory,
+    nearbyCat,
+    petCat,
+    nearbyNPC,
+    npcDialogueOpen,
+    talkToMaahi,
+    closeMaahiDialogue,
+    setGameState,
+  ]);
 
   // Seamless 360-degree mouse look & pointer lock support
   useEffect(() => {
@@ -202,6 +228,7 @@ export default function PlayerController() {
   // Frame update for movement and footstep audio
   useFrame((state, delta) => {
     if (gameState !== "playing") return;
+    if (npcDialogueOpen) return; // freeze movement while talking to Maahi
 
     const activeCam = state.camera;
     const isRunning = keys.current["ShiftLeft"] || keys.current["ShiftRight"];

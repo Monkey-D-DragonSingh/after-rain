@@ -6,7 +6,7 @@ import IntroScreen from "@/components/UI/IntroScreen";
 import HUD from "@/components/UI/HUD";
 import MemoryModal from "@/components/UI/MemoryModal";
 import MapModal from "@/components/UI/MapModal";
-import EndingSequence from "@/components/UI/EndingSequence";
+import EndingSequence from "@/components/EndingSequence";
 import MobileControls from "@/components/UI/MobileControls";
 
 const Scene = dynamic(() => import("@/components/Scene"), { ssr: false });

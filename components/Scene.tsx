@@ -49,6 +49,9 @@ export default function Scene() {
           powerPreference: "high-performance",
         }}
       >
+        {/* Atmosphere owns the scene's fog (fogExp2, dynamically animated
+            for weather/thunder/dawn). Do not add another <fog> here —
+            a scene can only have one, and they'll fight each other. */}
         <Atmosphere />
         <Clouds />
         <Rain />

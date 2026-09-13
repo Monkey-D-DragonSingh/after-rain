@@ -1,22 +1,62 @@
 'use client';
 
-import { useRef, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
-import { TILE_SIZE, ACTIVE_RADIUS, worldToTile, getActiveTileKeys, tileSeed } from '@/lib/worldGrid';
+import { Instances, Instance } from '@react-three/drei';
+import {
+  TILE_SIZE,
+  ACTIVE_RADIUS,
+  worldToTile,
+  getActiveTileKeys,
+  generateTileContent,
+} from '@/lib/worldGrid';
 
 function Tile({ tx, tz }: { tx: number; tz: number }) {
-  const seed = tileSeed(tx, tz);
   const worldX = tx * TILE_SIZE;
   const worldZ = tz * TILE_SIZE;
 
-  // Placeholder content for now — this is where procedural buildings,
-  // instanced windows, cats, etc. will eventually be generated using `seed`.
+  // generateTileContent is a pure function of (tx, tz) — same seed in,
+  // same buildings out, every time. Safe to call during render like this;
+  // useMemo just avoids recomputing it on every re-render of this tile.
+  const { buildings, streetLights, groundColor } = useMemo(
+    () => generateTileContent(tx, tz),
+    [tx, tz]
+  );
+
   return (
     <group position={[worldX, 0, worldZ]}>
-      <mesh position={[TILE_SIZE / 2, 5, TILE_SIZE / 2]}>
-        <boxGeometry args={[10, 10, 10]} />
-        <meshStandardMaterial color={seed % 2 === 0 ? 'orange' : 'skyblue'} />
+      {/* Ground slab for this tile */}
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[TILE_SIZE / 2, 0, TILE_SIZE / 2]} receiveShadow>
+        <planeGeometry args={[TILE_SIZE, TILE_SIZE]} />
+        <meshStandardMaterial color={groundColor} roughness={0.2} metalness={0.5} />
       </mesh>
+
+      {/* Buildings — instanced so N buildings in this tile cost ~1 draw call */}
+      <Instances limit={buildings.length || 1} castShadow receiveShadow>
+        <boxGeometry args={[1, 1, 1]} />
+        <meshStandardMaterial roughness={0.4} metalness={0.3} />
+        {buildings.map((b, i) => (
+          <Instance
+            key={i}
+            position={b.position}
+            scale={b.size}
+            color={b.color}
+          />
+        ))}
+      </Instances>
+
+      {/* Street lights — thin emissive poles marking empty plots */}
+      <Instances limit={streetLights.length || 1}>
+        <cylinderGeometry args={[0.15, 0.15, 6, 6]} />
+        <meshStandardMaterial
+          color="#3fd9ff"
+          emissive="#3fd9ff"
+          emissiveIntensity={1.2}
+        />
+        {streetLights.map((s, i) => (
+          <Instance key={i} position={[s.position[0], 3, s.position[2]]} />
+        ))}
+      </Instances>
     </group>
   );
 }

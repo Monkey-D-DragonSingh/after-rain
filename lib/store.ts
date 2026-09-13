@@ -3,6 +3,32 @@ import { DistrictId, GameState, MemoryItem, WeatherType, CityAnnouncement } from
 import { DISTRICTS, INITIAL_MEMORIES, CITY_ANNOUNCEMENTS } from './data';
 import { sound } from './audio';
 
+// --- Maahi's dialogue content -----------------------------------------------
+// PLACEHOLDER LINES — replace these with the real dialogue whenever you have it.
+// Each conversation is an array of lines shown one at a time (press E to advance).
+// "Lore" conversations hint at the world/story; "casual" ones are just chit-chat.
+// A conversation is picked at random each time you approach her fresh.
+
+const MAAHI_LORE_CONVERSATIONS: string[][] = [
+  [
+    "[PLACEHOLDER] You keep coming back to this street. Do you even know why?",
+    "[PLACEHOLDER] Some of us remember things the city would rather we forgot.",
+  ],
+  [
+    "[PLACEHOLDER] The rain here isn't just weather. Nothing about this city is 'just' anything.",
+  ],
+];
+
+const MAAHI_CASUAL_CONVERSATIONS: string[][] = [
+  ["[PLACEHOLDER] Cold night, isn't it? Stay dry out there."],
+  [
+    "[PLACEHOLDER] Oh, you again. Small world. Or small district, at least.",
+    "[PLACEHOLDER] Don't let the neon fool you — it's colder than it looks.",
+  ],
+];
+
+const MAAHI_LORE_CHANCE = 0.45; // ~45% of conversations lean mysterious/lore
+
 interface GameStore {
   gameState: GameState;
   currentDistrict: DistrictId;
@@ -16,6 +42,17 @@ interface GameStore {
   playerPos: [number, number, number];
   activeAnnouncement: CityAnnouncement | null;
   thunderFlash: boolean;
+
+  // --- Cats ---
+  nearbyCat: string | null;
+  pettedCats: string[];
+  catPetCount: Record<string, number>;
+
+  // --- Maahi (NPC) ---
+  nearbyNPC: boolean;
+  npcDialogueOpen: boolean;
+  npcQueue: string[];
+  npcLineIndex: number;
 
   // Actions
   startGame: () => void;
@@ -31,6 +68,15 @@ interface GameStore {
   setChapter: (c: number) => void;
   fastTravel: (id: DistrictId) => void;
   triggerAnnouncement: (ann?: CityAnnouncement) => void;
+
+  // --- Cats ---
+  setNearbyCat: (id: string | null) => void;
+  petCat: (id: string) => void;
+
+  // --- Maahi (NPC) ---
+  setNearbyNPC: (near: boolean) => void;
+  talkToMaahi: () => void; // starts a conversation, or advances it if already open
+  closeMaahiDialogue: () => void;
 }
 
 export const useGameStore = create<GameStore>((set, get) => ({
@@ -46,6 +92,15 @@ export const useGameStore = create<GameStore>((set, get) => ({
   playerPos: [0, 1.6, 12],
   activeAnnouncement: null,
   thunderFlash: false,
+
+  nearbyCat: null,
+  pettedCats: [],
+  catPetCount: {},
+
+  nearbyNPC: false,
+  npcDialogueOpen: false,
+  npcQueue: [],
+  npcLineIndex: 0,
 
   startGame: () => {
     sound.init();
@@ -146,5 +201,55 @@ export const useGameStore = create<GameStore>((set, get) => ({
     setTimeout(() => {
       set({ activeAnnouncement: null });
     }, 9000);
+  },
+
+  // --- Cats ---
+  setNearbyCat: (id) => {
+    set({ nearbyCat: id });
+  },
+
+  petCat: (id) => {
+    set((state) => {
+      const alreadyPetted = state.pettedCats.includes(id);
+      return {
+        pettedCats: alreadyPetted ? state.pettedCats : [...state.pettedCats, id],
+        catPetCount: { ...state.catPetCount, [id]: (state.catPetCount[id] || 0) + 1 },
+      };
+    });
+  },
+
+  // --- Maahi (NPC) ---
+  setNearbyNPC: (near) => {
+    set({ nearbyNPC: near });
+  },
+
+  talkToMaahi: () => {
+    const { npcDialogueOpen, npcQueue, npcLineIndex } = get();
+
+    if (!npcDialogueOpen) {
+      // Fresh conversation: randomly pick lore or casual, then a random
+      // conversation from that pool.
+      const isLore = Math.random() < MAAHI_LORE_CHANCE;
+      const pool = isLore ? MAAHI_LORE_CONVERSATIONS : MAAHI_CASUAL_CONVERSATIONS;
+      const chosen = pool[Math.floor(Math.random() * pool.length)];
+
+      set({
+        npcDialogueOpen: true,
+        npcQueue: chosen,
+        npcLineIndex: 0,
+      });
+      return;
+    }
+
+    // Already talking: advance to next line, or close if that was the last one.
+    if (npcLineIndex < npcQueue.length - 1) {
+      set({ npcLineIndex: npcLineIndex + 1 });
+    } else {
+      set({ npcDialogueOpen: false, npcQueue: [], npcLineIndex: 0 });
+    }
+  },
+
+  closeMaahiDialogue: () => {
+    set({ npcDialogueOpen: false, npcQueue: [], npcLineIndex: 0 });
   },
 }));
