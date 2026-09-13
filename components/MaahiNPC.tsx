@@ -5,8 +5,7 @@ import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
 import { useGameStore } from "@/lib/store";
 
-// Rough starting spot — move this once you can see actual streets/plazas
-// in-world (check against your Districts.tsx layout).
+
 const MAAHI_POSITION: [number, number, number] = [4, 0, 9];
 const TALK_RADIUS = 2.6;
 
@@ -14,41 +13,51 @@ export default function MaahiNPC() {
   const groupRef = useRef<THREE.Group>(null);
   const hairRef = useRef<THREE.Mesh>(null);
 
-  const playerPos = useGameStore((s) => s.playerPos);
-  const nearbyNPC = useGameStore((s) => s.nearbyNPC);
-  const setNearbyNPC = useGameStore((s) => s.setNearbyNPC);
-  const npcDialogueOpen = useGameStore((s) => s.npcDialogueOpen);
-
+ const playerPos = useGameStore((s) => s.playerPos);
+const nearbyNPC = useGameStore((s) => s.nearbyNPC);
+const setNearbyNPC = useGameStore((s) => s.setNearbyNPC);
+const npcDialogueOpen = useGameStore((s) => s.npcDialogueOpen);
+const talkToMaahi = useGameStore((s) => s.talkToMaahi);
+  // Proximity + idle animation
   useFrame(({ clock }) => {
     const t = clock.getElapsedTime();
 
-    // Proximity check — same pattern as Cats.tsx / Interactables.tsx
     const dist = Math.hypot(
       MAAHI_POSITION[0] - playerPos[0],
       MAAHI_POSITION[1] - playerPos[1],
       MAAHI_POSITION[2] - playerPos[2]
     );
     const isNear = dist < TALK_RADIUS;
-    if (isNear !== nearbyNPC) {
-      setNearbyNPC(isNear);
-    }
+    if (isNear !== nearbyNPC) setNearbyNPC(isNear);
 
-    // Idle breathing sway
     if (groupRef.current) {
-      groupRef.current.scale.y = 1 + Math.sin(t * 1.2) * 0.008;
+      groupRef.current.position.y = MAAHI_POSITION[1] + Math.sin(t * 1.3) * 0.015;
     }
-
-    // Hair sway
     if (hairRef.current) {
-      hairRef.current.rotation.z = Math.sin(t * 0.9) * 0.05;
+      hairRef.current.rotation.z = Math.sin(t * 0.9) * 0.04;
     }
   });
 
+  // THE MISSING PIECE — listens for "E" to open/close dialogue
+  useEffect(() => {
+  function handleKeyDown(e: KeyboardEvent) {
+    if (e.key.toLowerCase() === "e" && nearbyNPC) {
+      talkToMaahi(); // pehli baar dialogue start karega, dobara dabane pe next line
+    }
+  }
+  window.addEventListener("keydown", handleKeyDown);
+  return () => window.removeEventListener("keydown", handleKeyDown);
+}, [nearbyNPC, talkToMaahi]);
+
+  const skin = "#e8beac";
+  const hairColor = "#150a24";
+  const dress = "#3b0764";
+
   return (
     <group ref={groupRef} position={MAAHI_POSITION}>
-      {/* Interaction ring — glows when in talk range, brighter while mid-conversation */}
+      {/* Interaction ring */}
       <mesh position={[0, 0.02, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-        <ringGeometry args={[0.55, 0.65, 24]} />
+        <ringGeometry args={[0.55, 0.65, 32]} />
         <meshBasicMaterial
           color="#d946ef"
           transparent
@@ -57,45 +66,70 @@ export default function MaahiNPC() {
         />
       </mesh>
 
-      {/* Soft ambient glow around her — mysterious/beautiful presence */}
-      <pointLight
-        position={[0, 1.3, 0]}
-        color="#e879f9"
-        intensity={nearbyNPC ? 1.6 : 0.7}
-        distance={6}
-      />
+      {/* Rim/ambient glow */}
+      <pointLight position={[0, 1.3, 0.3]} color="#e879f9" intensity={nearbyNPC ? 1.8 : 0.9} distance={6} />
+      <pointLight position={[0, 1.3, -0.4]} color="#7dd3fc" intensity={0.5} distance={4} />
 
-      {/* Body — coat/dress silhouette */}
-      <mesh position={[0, 0.85, 0]} castShadow>
-        <cylinderGeometry args={[0.22, 0.32, 1.3, 16]} />
-        <meshStandardMaterial color="#3b0764" roughness={0.55} metalness={0.1} />
+      {/* Legs — capsules read far more natural than cylinders */}
+      <mesh position={[-0.09, 0.35, 0]} castShadow>
+        <capsuleGeometry args={[0.065, 0.55, 4, 8]} />
+        <meshStandardMaterial color={dress} roughness={0.5} />
+      </mesh>
+      <mesh position={[0.09, 0.35, 0]} castShadow>
+        <capsuleGeometry args={[0.065, 0.55, 4, 8]} />
+        <meshStandardMaterial color={dress} roughness={0.5} />
       </mesh>
 
-      {/* Shoulders/upper body accent */}
-      <mesh position={[0, 1.42, 0]} castShadow>
-        <sphereGeometry args={[0.24, 16, 12]} />
-        <meshStandardMaterial color="#4c0a75" roughness={0.5} />
+      {/* Torso — tapered capsule instead of a straight cylinder */}
+      <mesh position={[0, 1.05, 0]} scale={[1, 1, 0.85]} castShadow>
+        <capsuleGeometry args={[0.19, 0.55, 6, 12]} />
+        <meshStandardMaterial color={dress} roughness={0.5} metalness={0.08} />
       </mesh>
 
-      {/* Head */}
-      <mesh position={[0, 1.68, 0]} castShadow>
-        <sphereGeometry args={[0.15, 16, 16]} />
-        <meshStandardMaterial color="#e8beac" roughness={0.6} />
+      {/* Arms */}
+      <mesh position={[-0.26, 1.1, 0]} rotation={[0, 0, 0.15]} castShadow>
+        <capsuleGeometry args={[0.045, 0.5, 4, 8]} />
+        <meshStandardMaterial color={dress} roughness={0.5} />
+      </mesh>
+      <mesh position={[0.26, 1.1, 0]} rotation={[0, 0, -0.15]} castShadow>
+        <capsuleGeometry args={[0.045, 0.5, 4, 8]} />
+        <meshStandardMaterial color={dress} roughness={0.5} />
       </mesh>
 
-      {/* Hair — swept back, slightly elongated for a flowing look */}
-      <mesh ref={hairRef} position={[0, 1.7, -0.05]} scale={[1, 1.15, 1.1]} castShadow>
-        <sphereGeometry args={[0.17, 16, 16]} />
-        <meshStandardMaterial color="#150a24" roughness={0.4} />
+      {/* Neck */}
+      <mesh position={[0, 1.48, 0]} castShadow>
+        <cylinderGeometry args={[0.055, 0.06, 0.1, 12]} />
+        <meshStandardMaterial color={skin} roughness={0.6} />
       </mesh>
 
-      {/* Eyes — soft violet glow, reads as striking rather than eerie */}
-      <mesh position={[-0.05, 1.685, 0.135]}>
-        <sphereGeometry args={[0.014, 6, 6]} />
+      {/* Head — higher segment count = much smoother than the old default */}
+      <mesh position={[0, 1.62, 0]} castShadow>
+        <sphereGeometry args={[0.15, 32, 32]} />
+        <meshStandardMaterial color={skin} roughness={0.55} />
+      </mesh>
+
+      {/* Hair — cap + ponytail, gives silhouette instead of a blob */}
+      <mesh
+        ref={hairRef}
+        position={[0, 1.66, -0.02]}
+        scale={[1.05, 1.1, 1.1]}
+        castShadow
+      >
+        <sphereGeometry args={[0.155, 24, 24, 0, Math.PI * 2, 0, Math.PI * 0.65]} />
+        <meshStandardMaterial color={hairColor} roughness={0.35} />
+      </mesh>
+      <mesh position={[0, 1.35, -0.14]} rotation={[0.3, 0, 0]} castShadow>
+        <capsuleGeometry args={[0.045, 0.4, 4, 8]} />
+        <meshStandardMaterial color={hairColor} roughness={0.35} />
+      </mesh>
+
+      {/* Eyes */}
+      <mesh position={[-0.055, 1.625, 0.135]}>
+        <sphereGeometry args={[0.016, 8, 8]} />
         <meshBasicMaterial color="#e879f9" />
       </mesh>
-      <mesh position={[0.05, 1.685, 0.135]}>
-        <sphereGeometry args={[0.014, 6, 6]} />
+      <mesh position={[0.055, 1.625, 0.135]}>
+        <sphereGeometry args={[0.016, 8, 8]} />
         <meshBasicMaterial color="#e879f9" />
       </mesh>
     </group>

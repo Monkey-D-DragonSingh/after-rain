@@ -14,6 +14,9 @@ import Interactables from "./Interactables";
 import PlayerController from "./PlayerController";
 import { useGameStore } from "@/lib/store";
 import WorldManager from "./WorldManager";
+import Cats from "./Cats";
+import MaahiNPC from "./MaahiNPC";
+import MaahiDialogueUI from "./MaahiDialogueUI";
 
 function IntroCamera() {
   const gameState = useGameStore((s) => s.gameState);
@@ -22,7 +25,6 @@ function IntroCamera() {
   useFrame(({ clock, camera }) => {
     if (gameState === "intro") {
       const t = clock.getElapsedTime() * 0.08;
-      // Gentle cinematic fly-through between skyscrapers
       const camX = Math.sin(t) * 45;
       const camZ = Math.cos(t) * 45;
       const camY = 22 + Math.sin(t * 0.5) * 4;
@@ -49,9 +51,6 @@ export default function Scene() {
           powerPreference: "high-performance",
         }}
       >
-        {/* Atmosphere owns the scene's fog (fogExp2, dynamically animated
-            for weather/thunder/dawn). Do not add another <fog> here —
-            a scene can only have one, and they'll fight each other. */}
         <Atmosphere />
         <Clouds />
         <Rain />
@@ -61,9 +60,14 @@ export default function Scene() {
         <Drones />
         <Interactables />
         <WorldManager />
+        <Cats />
+        <MaahiNPC />
 
         {gameState === "intro" ? <IntroCamera /> : <PlayerController />}
       </Canvas>
+
+      {/* Dialogue UI sits outside the Canvas — it's HTML, not 3D */}
+      <MaahiDialogueUI />
     </div>
   );
 }

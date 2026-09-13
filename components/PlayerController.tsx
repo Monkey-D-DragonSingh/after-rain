@@ -60,6 +60,7 @@ export default function PlayerController() {
 
       // Interaction key [E]
       if (e.code === "KeyE") {
+        console.log("E pressed", { npcDialogueOpen, nearbyMemory, nearbyNPC, nearbyCat, gameState }); // temporary debug
         if (npcDialogueOpen) {
           // Mid-conversation: E advances/closes regardless of anything else nearby.
           talkToMaahi();

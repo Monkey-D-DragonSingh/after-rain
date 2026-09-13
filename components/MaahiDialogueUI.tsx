@@ -10,15 +10,13 @@ export default function MaahiDialogueUI() {
 
   if (!npcDialogueOpen) {
     // Subtle "you can talk to her" hint when close but not yet talking.
-    if (nearbyNPC) {
-      return (
-        <div className="pointer-events-none fixed bottom-24 left-1/2 -translate-x-1/2 z-40">
-          <p className="text-sm tracking-wide text-fuchsia-200/80 font-mono">
-            [E] Talk to Maahi
-          </p>
-        </div>
-      );
-    }
+if (nearbyNPC) {
+  return (
+    <div className="fixed top-10 left-1/2 -translate-x-1/2 z-[9999] bg-red-600 text-white text-3xl font-bold px-8 py-4 rounded">
+      TEST — E TO TALK
+    </div>
+  );
+}
     return null;
   }
 
