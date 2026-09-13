@@ -13,6 +13,7 @@ import Drones from "./Drones";
 import Interactables from "./Interactables";
 import PlayerController from "./PlayerController";
 import { useGameStore } from "@/lib/store";
+import WorldManager from "./WorldManager";
 
 function IntroCamera() {
   const gameState = useGameStore((s) => s.gameState);
@@ -56,6 +57,7 @@ export default function Scene() {
         <TrafficLights />
         <Drones />
         <Interactables />
+        <WorldManager />
 
         {gameState === "intro" ? <IntroCamera /> : <PlayerController />}
       </Canvas>
