@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useRef } from "react";
 import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
 import { useGameStore } from "@/lib/store";
@@ -37,17 +37,6 @@ const talkToMaahi = useGameStore((s) => s.talkToMaahi);
       hairRef.current.rotation.z = Math.sin(t * 0.9) * 0.04;
     }
   });
-
-  // THE MISSING PIECE — listens for "E" to open/close dialogue
-  useEffect(() => {
-  function handleKeyDown(e: KeyboardEvent) {
-    if (e.key.toLowerCase() === "e" && nearbyNPC) {
-      talkToMaahi(); // pehli baar dialogue start karega, dobara dabane pe next line
-    }
-  }
-  window.addEventListener("keydown", handleKeyDown);
-  return () => window.removeEventListener("keydown", handleKeyDown);
-}, [nearbyNPC, talkToMaahi]);
 
   const skin = "#e8beac";
   const hairColor = "#150a24";

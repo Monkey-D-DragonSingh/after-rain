@@ -11,19 +11,21 @@ import { sound } from './audio';
 
 const MAAHI_LORE_CONVERSATIONS: string[][] = [
   [
-    "[PLACEHOLDER] You keep coming back to this street. Do you even know why?",
-    "[PLACEHOLDER] Some of us remember things the city would rather we forgot.",
+    " You keep coming back to this street. Do you even know why?",
+    "Some of us remember things the city would rather we forgot.",
+    "We can survive the storm of sadness but the waves of happiness needs a shore to come back",
+    "Everything will be good in the end if it’s not good then it’s not the end",
   ],
   [
-    "[PLACEHOLDER] The rain here isn't just weather. Nothing about this city is 'just' anything.",
+    "The rain here isn't just weather. Nothing about this city is 'just' anything.",
   ],
 ];
 
 const MAAHI_CASUAL_CONVERSATIONS: string[][] = [
-  ["[PLACEHOLDER] Cold night, isn't it? Stay dry out there."],
+  ["Cold night, isn't it? Stay dry out there."],
   [
-    "[PLACEHOLDER] Oh, you again. Small world. Or small district, at least.",
-    "[PLACEHOLDER] Don't let the neon fool you — it's colder than it looks.",
+    "Oh, you again. Small world. Or small district, at least.",
+    "Don't let the neon fool you — it's colder than it looks.",
   ],
 ];
 

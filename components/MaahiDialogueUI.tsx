@@ -3,7 +3,9 @@
 import { useGameStore } from "@/lib/store";
 
 export default function MaahiDialogueUI() {
+
   const npcDialogueOpen = useGameStore((s) => s.npcDialogueOpen);
+  // ... baaki same
   const npcQueue = useGameStore((s) => s.npcQueue);
   const npcLineIndex = useGameStore((s) => s.npcLineIndex);
   const nearbyNPC = useGameStore((s) => s.nearbyNPC);
@@ -12,8 +14,10 @@ export default function MaahiDialogueUI() {
     // Subtle "you can talk to her" hint when close but not yet talking.
 if (nearbyNPC) {
   return (
-    <div className="fixed top-10 left-1/2 -translate-x-1/2 z-[9999] bg-red-600 text-white text-3xl font-bold px-8 py-4 rounded">
-      TEST — E TO TALK
+    <div className="pointer-events-none fixed bottom-20 left-1/2 -translate-x-1/2 z-40">
+      <p className="text-xs uppercase tracking-[0.2em] text-fuchsia-300 font-mono bg-black/50 px-4 py-2 rounded">
+        [E] Talk to Maahi
+      </p>
     </div>
   );
 }
